@@ -88,11 +88,11 @@ class Field
     order.shuffle!
 
     order.each do |p|
-      cell(p.x, p.y).available = true
+      flower(p.x, p.y).available = true
     end
 
     order.each do |p|
-      parent = cell(p.x, p.y)
+      parent = flower(p.x, p.y)
       next if !parent.available
       next if !parent.roll_for_breed?
 
@@ -104,7 +104,7 @@ class Field
         # breed
         parents = [
           parent,
-          cell(partner_pos.x, partner_pos.y),
+          flower(partner_pos.x, partner_pos.y),
         ]
         parents.each do |e|
           e.breeded
@@ -122,7 +122,7 @@ class Field
   def inc_counter
     for y in 0...@height
       for x in 0...@width
-        cell(x, y).counter += 1 if flower_cell?(x, y)
+        flower(x, y).counter += 1 if flower_cell?(x, y)
       end
     end
   end
@@ -130,7 +130,7 @@ class Field
   def remove_children
     for y in 0...@height
       for x in 0...@width
-        @field[y][x] = nil if flower_cell?(x, y) && cell(x, y).is_child
+        @field[y][x] = nil if flower_cell?(x, y) && flower(x, y).is_child
       end
     end
   end
@@ -151,9 +151,8 @@ class Field
 
     candidates = []
     adjacents(x, y).each do |p|
-      flower = cell(p.x, p.y)
-      next if !flower
-      next if !flower.available
+      next if !flower_cell?(p.x, p.y)
+      next if !flower(p.x, p.y).available
 
       candidates << p
     end
@@ -170,7 +169,8 @@ class Field
     @field[y][x].is_child = true
   end
 
-  def cell(x, y)
+  def flower(x, y)
+    raise if !flower_cell?(x, y)
     @field[y][x]
   end
 
@@ -188,21 +188,20 @@ class Field
   end
 
   def flower_cell?(x, y)
-    !cell(x, y).nil?
+    !@field[y][x].nil?
   end
 
   def empty_cell?(x, y)
-    cell(x, y).nil?
+    @field[y][x].nil?
   end
 
   def dump
     for y in 0...@height
       str = ""
       for x in 0...@width
-        flower = cell(x, y)
-        if !flower
+        if empty_cell?(x, y)
           str += "."
-        elsif flower.is_child
+        elsif flower(x, y).is_child
           str += "c"
         else
           str += "P"
