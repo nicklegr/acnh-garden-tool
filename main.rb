@@ -82,17 +82,17 @@ class Field
     order = []
     for y in 0...@height
       for x in 0...@width
-        order << Pos.new(x, y) if @field[y][x]
+        order << Pos.new(x, y) if flower_cell?(x, y)
       end
     end
     order.shuffle!
 
     order.each do |p|
-      @field[p.y][p.x].available = true
+      cell(p.x, p.y).available = true
     end
 
     order.each do |p|
-      parent = @field[p.y][p.x]
+      parent = cell(p.x, p.y)
       next if !parent.available
       next if !parent.roll_for_breed?
 
@@ -104,7 +104,7 @@ class Field
         # breed
         parents = [
           parent,
-          @field[partner_pos.y][partner_pos.x],
+          cell(partner_pos.x, partner_pos.y),
         ]
         parents.each do |e|
           e.breeded
@@ -122,7 +122,7 @@ class Field
   def inc_counter
     for y in 0...@height
       for x in 0...@width
-        @field[y][x].counter += 1 if @field[y][x]
+        cell(x, y).counter += 1 if flower_cell?(x, y)
       end
     end
   end
@@ -130,28 +130,28 @@ class Field
   def remove_children
     for y in 0...@height
       for x in 0...@width
-        @field[y][x] = nil if @field[y][x] && @field[y][x].is_child
+        @field[y][x] = nil if flower_cell?(x, y) && cell(x, y).is_child
       end
     end
   end
 
   def find_random_free_adjacent(x, y)
-    raise if !@field[y][x]
+    raise if !flower_cell?(x, y)
 
     candidates = []
     adjacents(x, y).each do |p|
-      candidates << p if !@field[p.y][p.x]
+      candidates << p if empty_cell?(p.x, p.y)
     end
 
     candidates.sample # nil if candidates is empty
   end
 
   def find_random_adjacent_partner(x, y)
-    raise if !@field[y][x]
+    raise if !flower_cell?(x, y)
 
     candidates = []
     adjacents(x, y).each do |p|
-      flower = @field[p.y][p.x]
+      flower = cell(p.x, p.y)
       next if !flower
       next if !flower.available
 
@@ -170,6 +170,10 @@ class Field
     @field[y][x].is_child = true
   end
 
+  def cell(x, y)
+    @field[y][x]
+  end
+
   def adjacents(x, y)
     positions = POS_DIFF.map do |e|
       cx = x + e[0]
@@ -183,11 +187,19 @@ class Field
      0 <= x && x < @width && 0 <= y && y < @height
   end
 
+  def flower_cell?(x, y)
+    !cell(x, y).nil?
+  end
+
+  def empty_cell?(x, y)
+    cell(x, y).nil?
+  end
+
   def dump
     for y in 0...@height
       str = ""
       for x in 0...@width
-        flower = @field[y][x]
+        flower = cell(x, y)
         if !flower
           str += "."
         elsif flower.is_child
