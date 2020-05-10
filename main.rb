@@ -79,6 +79,8 @@ class Field
   end
 
   def daily_breed
+    @daily_result = DailyResult.new
+
     order = []
     for y in 0...@height
       for x in 0...@width
@@ -97,7 +99,10 @@ class Field
       next if !parent.roll_for_breed?
 
       spawn_pos = find_random_free_adjacent(p.x, p.y)
-      next if !spawn_pos
+      if !spawn_pos
+        @daily_result.fails += 1
+        next
+      end
 
       partner_pos = find_random_adjacent_partner(p.x, p.y)
       if partner_pos
@@ -111,10 +116,12 @@ class Field
         end
 
         spawn_child(spawn_pos.x, spawn_pos.y)
+        @daily_result.hybrids += 1
       else
         # duplicate
         parent.breeded
         spawn_child(spawn_pos.x, spawn_pos.y)
+        @daily_result.duplicates += 1
       end
     end
   end
@@ -210,8 +217,19 @@ class Field
       puts str
     end
   end
+
+  attr_accessor :daily_result
 end
 
+class DailyResult
+  def initialize
+    @hybrids = 0
+    @duplicates = 0
+    @fails = 0
+  end
+
+  attr_accessor :hybrids, :duplicates, :fails
+end
 
 days = 20
 # runs = 100
@@ -259,8 +277,10 @@ puts "initial_layout:"
 field.dump
 puts ""
 
+results = []
 days.times do |d|
   field.daily_breed
+  results << field.daily_result
 
   puts "day #{d}:"
   field.dump
@@ -270,3 +290,5 @@ days.times do |d|
 
   puts ""
 end
+
+pp results
