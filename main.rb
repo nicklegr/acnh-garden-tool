@@ -10,6 +10,7 @@
 
 days = 20
 runs = 1000
+verbose_output = false
 
 require "pp"
 
@@ -278,22 +279,26 @@ runs.times do
     field.spawn_parent(e[0], e[1])
   end
 
-  puts "initial_layout:"
-  field.dump
-  puts ""
+  if verbose_output
+    puts "initial_layout:"
+    field.dump
+    puts ""
+  end
 
   run_result = []
   days.times do |d|
     field.daily_breed
     run_result << field.daily_result
 
-    puts "day #{d}:"
-    field.dump
+    if verbose_output
+      puts "day #{d}:"
+      field.dump
+    end
 
     field.remove_children
     field.inc_counter
 
-    puts ""
+    puts "" if verbose_output
   end
 
   results << run_result
