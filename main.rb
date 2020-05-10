@@ -8,6 +8,9 @@
 # - 毎日全ての花に水やりを行う
 # - 繁殖した花は毎日全て取り除く
 
+days = 20
+runs = 1000
+
 require "pp"
 
 def array_2d(r, c)
@@ -16,6 +19,10 @@ def array_2d(r, c)
     ret << [nil] * c
   end
   ret
+end
+
+def f_to_s(value)
+  sprintf("%.2f", value)
 end
 
 class Flower
@@ -75,7 +82,6 @@ class Field
     @width = width
     @height = height
     @field = array_2d(height, width)
-    pp @field
   end
 
   def daily_breed
@@ -231,9 +237,6 @@ class DailyResult
   attr_accessor :hybrids, :duplicates, :fails
 end
 
-days = 20
-# runs = 100
-
 # ペア植え
 initial_layout = [
   [ 0, 0],
@@ -267,28 +270,77 @@ initial_layout = [
   [10, 3],
 ]
 
-field = Field.new(11, 4)
+results = []
+runs.times do
+  field = Field.new(11, 4)
 
-initial_layout.each do |e|
-  field.spawn_parent(e[0], e[1])
+  initial_layout.each do |e|
+    field.spawn_parent(e[0], e[1])
+  end
+
+  puts "initial_layout:"
+  field.dump
+  puts ""
+
+  run_result = []
+  days.times do |d|
+    field.daily_breed
+    run_result << field.daily_result
+
+    puts "day #{d}:"
+    field.dump
+
+    field.remove_children
+    field.inc_counter
+
+    puts ""
+  end
+
+  results << run_result
 end
 
-puts "initial_layout:"
-field.dump
+flower_count = initial_layout.size
+hybrids_total = 0
+duplicates_total = 0
+fails_total = 0
+
+puts "Details:"
+puts "hybrids,hybrids_avg,duplicates,duplicates_avg,fails,fails_avg"
+results.each do |e|
+  hybrids = e.map(&:hybrids).inject(:+)
+  duplicates = e.map(&:duplicates).inject(:+)
+  fails = e.map(&:fails).inject(:+)
+
+  hybrids_total += hybrids
+  duplicates_total += duplicates
+  fails_total += fails
+
+  hybrids_avg = hybrids.to_f / flower_count
+  duplicates_avg = duplicates.to_f / flower_count
+  fails_avg = fails.to_f / flower_count
+
+  puts "#{hybrids},#{f_to_s(hybrids_avg)},#{duplicates},#{f_to_s(duplicates_avg)},#{fails},#{f_to_s(fails_avg)}"
+end
 puts ""
 
-results = []
-days.times do |d|
-  field.daily_breed
-  results << field.daily_result
+hybrids_avg = hybrids_total.to_f / runs
+duplicates_avg = duplicates_total.to_f / runs
+fails_avg = fails_total.to_f / runs
 
-  puts "day #{d}:"
-  field.dump
+puts <<~EOD
+  Total:
+  hybrids,hybrids_avg,duplicates,duplicates_avg,fails,fails_avg
+  #{hybrids_total},#{f_to_s(hybrids_avg)},#{duplicates_total},#{f_to_s(duplicates_avg)},#{fails_total},#{f_to_s(fails_avg)}
+EOD
+puts ""
 
-  field.remove_children
-  field.inc_counter
+hybrids_per_day = hybrids_avg / flower_count
+duplicates_per_day = duplicates_avg / flower_count
+fails_per_day = fails_avg / flower_count
 
-  puts ""
-end
-
-pp results
+puts <<~EOD
+  Summary:
+  Hybrids/day: #{f_to_s(hybrids_per_day)}
+  Duplicates/day: #{f_to_s(duplicates_per_day)}
+  Fails/day: #{f_to_s(fails_per_day)}
+EOD
